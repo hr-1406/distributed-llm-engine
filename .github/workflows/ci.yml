@@ -1,0 +1,29 @@
+name: DistributedLLM-Engine CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff mypy torch --index-url https://download.pytorch.org/whl/cpu
+      - run: ruff check engine tests
+      - run: python -m compileall -q engine tests
+      - run: mypy engine --ignore-missing-imports
+      - run: pytest -q
+
+  gpu-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/Dockerfile -t distributed-llm-engine:ci .

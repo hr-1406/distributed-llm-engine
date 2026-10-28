@@ -1,0 +1,27 @@
+services:
+  engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      MODEL_ID: ${MODEL_ID:-meta-llama/Llama-3.1-8B}
+      HF_TOKEN: ${HF_TOKEN:-}
+      NCCL_DEBUG: ${NCCL_DEBUG:-WARN}
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    volumes:
+      - ./engine:/workspace/engine
+      - ./checkpoints:/workspace/checkpoints
+      - hf_cache:/root/.cache/huggingface
+    ports:
+      - "${API_PORT:-8080}:8080"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["uvicorn", "engine.serving.api_server:app", "--host", "0.0.0.0", "--port", "8080"]
+
+volumes:
+  hf_cache:
